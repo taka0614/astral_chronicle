@@ -16,7 +16,7 @@ let RS=3;function drawEHP(e,ex,w){const bw=Math.max(36,Math.min(110,w*.62)),bh=e
  if(e.boss){ctx.fillStyle='rgba(0,0,0,.35)';for(let i=1;i<10;i++)ctx.fillRect(x0+bw*i/10-.15,y0,.3,bh)}const sx=x0+bw*r;if(r>0&&r<1){const sg=ctx.createRadialGradient(sx,y0+bh/2,0,sx,y0+bh/2,bh*1.2);sg.addColorStop(0,'rgba(255,255,255,.7)');sg.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=sg;ctx.fillRect(sx-bh*1.2,y0-1,bh*2.4,bh+2)}ctx.restore();
  rr(x0-.6,y0-.6,bw+1.2,bh+1.2,(bh+1.2)/2);ctx.lineWidth=.55;ctx.strokeStyle=e.boss?'#e8c26a':'rgba(200,214,245,.85)';ctx.stroke();
  if(e.boss){ctx.save();ctx.translate(x0-1.5,y0+bh/2);ctx.rotate(Math.PI/4);ctx.fillStyle='#1a1028';ctx.fillRect(-2.6,-2.6,5.2,5.2);ctx.strokeStyle='#e8c26a';ctx.lineWidth=.6;ctx.strokeRect(-2.6,-2.6,5.2,5.2);ctx.fillStyle='#ff4a7a';ctx.fillRect(-1.2,-1.2,2.4,2.4);ctx.restore()}}
-function resize(){const r=$('#stage').getBoundingClientRect();if(!r.width)return;RS=Math.min(5,Math.max(3,Math.ceil(r.width*Math.min(3,window.devicePixelRatio||1)/W)));H=Math.max(200,Math.round(W*r.height/r.width));cv.width=W*RS;cv.height=H*RS;ctx.imageSmoothingEnabled=false;ctx.imageSmoothingQuality='high'}
+function resize(){const r=$('#stage').getBoundingClientRect();if(!r.width)return;RS=Math.min(3,Math.max(2,Math.ceil(r.width*Math.min(2,window.devicePixelRatio||1)/W)));H=Math.max(200,Math.round(W*r.height/r.width));cv.width=W*RS;cv.height=H*RS;ctx.imageSmoothingEnabled=false;ctx.imageSmoothingQuality='high'}
 window.addEventListener('resize',()=>{resize();sresize()});
 
 /* ================= AUDIO ================= */
@@ -1545,7 +1545,7 @@ async function startFromTitle(){if(scene!=='title'||titleBusy)return;titleBusy=t
 /* ---- file-based BGM ---- */
 const FBGM={quest:'bgm/field',battle:'bgm/battle',boss:'bgm/boss'};const FBUF={};let fbSrc=null,fbName=null,fbGain=null;
 function loadFBGM(name){if(FBUF[name]||!AC)return;FBUF[name]='loading';const get=ext=>fetch(FBGM[name]+ext).then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}).then(ab=>new Promise((res,rej)=>AC.decodeAudioData(ab,res,rej)));
- get('.ogg').catch(()=>get('.mp3')).then(b=>{FBUF[name]=b;if(wantBGM===name&&!muted)playFileBGM(name,true)}).catch(()=>{FBUF[name]=null})}
+ get('.mp3').then(b=>{FBUF[name]=b;if(wantBGM===name&&!muted)playFileBGM(name,true)}).catch(()=>{FBUF[name]=null})}
 function playFileBGM(name,force){if(fbName===name&&fbSrc&&!force&&wantBGM===name)return;stopSeq();wantBGM=name;if(!AC||muted)return;const b=FBUF[name];if(!(b instanceof AudioBuffer)){loadFBGM(name);return}
  const src=AC.createBufferSource();src.buffer=b;src.loop=true;fbGain=AC.createGain();fbGain.gain.setValueAtTime(0,AC.currentTime);fbGain.gain.linearRampToValueAtTime(.55,AC.currentTime+.6);src.connect(fbGain);fbGain.connect(master||AC.destination);src.start();fbSrc=src;fbName=name}
 function stopFileBGM(){if(fbSrc){try{const s=fbSrc,g=fbGain;g.gain.cancelScheduledValues(AC.currentTime);g.gain.setValueAtTime(g.gain.value,AC.currentTime);g.gain.linearRampToValueAtTime(0,AC.currentTime+.3);s.stop(AC.currentTime+.32)}catch(e){}}fbSrc=null;fbName=null}
@@ -1747,7 +1747,7 @@ function loadTownBG(key){if(TBG[key])return TBG[key];const o=TBG[key]={ready:fal
  fetch('img/town/'+key+'.json').then(r=>r.json()).then(j=>{o.meta=j;done()}).catch(()=>{});
  o.bg=new Image();o.bg.onload=done;o.bg.src='img/town/'+key+'.webp';o.id=new Image();o.id.onload=done;o.id.src='img/town/'+key+'_id.png';return o}
 function buildTownSprites(o){const m=o.meta,W=m.resx,H=m.resy;const c1=document.createElement('canvas');c1.width=W;c1.height=H;const g1=c1.getContext('2d',{willReadFrequently:true});g1.drawImage(o.id,0,0);const id=g1.getImageData(0,0,W,H).data;
- g1.drawImage(o.bg,0,0);const bg=g1.getImageData(0,0,W,H).data;o.fill=`rgb(${bg[(4*W+4)*4]},${bg[(4*W+4)*4+1]},${bg[(4*W+4)*4+2]})`;const bb={};
+ g1.imageSmoothingEnabled=false;g1.drawImage(o.bg,0,0,W,H);o.sf=o.bg.naturalWidth!==W?o.bg.naturalWidth/W:0;const bg=g1.getImageData(0,0,W,H).data;o.fill=`rgb(${bg[(4*W+4)*4]},${bg[(4*W+4)*4+1]},${bg[(4*W+4)*4+2]})`;const bb={};
  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const p=(y*W+x)*4,s=id[p]+id[p+1]*256;if(!s)continue;let b=bb[s];if(!b)b=bb[s]={x0:x,y0:y,x1:x,y1:y};else{if(x<b.x0)b.x0=x;if(x>b.x1)b.x1=x;if(y>b.y1)b.y1=y}}
  o.spr=[];for(const s in bb){const b=bb[s],w=b.x1-b.x0+3,h=b.y1-b.y0+3,x0=b.x0-1,y0=b.y0-1;const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');const im=g.createImageData(w,h),d=im.data;
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){const X=x0+x,Y=y0+y;if(X<0||Y<0||X>=W||Y>=H)continue;const p=(Y*W+X)*4;let hit=id[p]+id[p+1]*256==s;
@@ -1772,7 +1772,7 @@ function draw2D(o,cells,extra,dark){const m=o.meta,ppu=m.ppu;const r=tcv.getBoun
  const g=tctx,s=cw/(cells*ppu);const[px,py]=tpx(o,D.ax,D.ay);if(D.tcx==null){D.tcx=px;D.tcy=py}D.tcx+=(px-D.tcx)*.15;D.tcy+=(py-D.tcy)*.15;
  const vw=cw/s,vh=ch/s;let cx=Math.max(vw/2,Math.min(m.resx-vw/2,D.tcx)),cy=Math.max(vh/2,Math.min(m.resy-vh/2,D.tcy-ppu*.4));if(vw>m.resx)cx=m.resx/2;if(vh>m.resy)cy=m.resy/2;
  g.setTransform(1,0,0,1,0,0);g.fillStyle=o.fill||'#000';g.fillRect(0,0,cw,ch);g.setTransform(s,0,0,s,cw/2-cx*s,ch/2-cy*s);g.imageSmoothingEnabled=true;
- const L=cx-vw/2,T=cy-vh/2;{const sx=Math.max(0,L),sy=Math.max(0,T),sw=Math.min(m.resx,L+vw)-sx,sh=Math.min(m.resy,T+vh)-sy;if(sw>0&&sh>0)g.drawImage(o.bg,sx,sy,sw,sh,sx,sy,sw,sh)}
+ const L=cx-vw/2,T=cy-vh/2;{const sx=Math.max(0,L),sy=Math.max(0,T),sw=Math.min(m.resx,L+vw)-sx,sh=Math.min(m.resy,T+vh)-sy;if(sw>0&&sh>0){if(o.sf){const ise=g.imageSmoothingEnabled;g.imageSmoothingEnabled=false;g.drawImage(o.bg,sx*o.sf,sy*o.sf,sw*o.sf,sh*o.sf,sx,sy,sw,sh);g.imageSmoothingEnabled=ise}else g.drawImage(o.bg,sx,sy,sw,sh,sx,sy,sw,sh)}}
  const chars=[];const lead=uById(P.party[0]);if(lead&&!(D.world&&D.veh)){const im=art(lead.id);const wk=walkImg(lead.id);const wd=D.wdir||0,RC={gard:3};{const dn=wd==='R'?'right':wd==='L'?'left':wd===2?'up':'down';const fr=D.spd>.05?Math.floor(time*11)%4:0;chars.push({k:D.ay,x:D.ax,img:sprCell(lead.id,dn,fr)||dot3(HPAL[lead.id]||HPAL.allen,dn,fr),hgt:sprCell(lead.id,dn,fr)?1.32:1.36,smooth:false,pl:1})}}vehChars(chars);for(const e of extra||[])chars.push(e);
  for(const n of D.npcs||[])chars.push({k:n.z,x:n.x,img:sprCell('n_'+npcSpr(npcType(n)),n.dir,n.tx!=null?Math.floor((n.ft||0)*7)%4:0)||dot3(NPC2[npcBase(npcType(n))],n.dir,n.tx!=null?Math.floor((n.ft||0)*7)%4:0),hgt:1.32,flip:false,smooth:false});
  chars.sort((a,b)=>a.k-b.k);
